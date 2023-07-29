@@ -135,6 +135,85 @@ function saveBomTable(output) {
   }
 }
 
+function saveBomTableOnlySelected(output) {
+  console.log('***this***',this)
+  var text = '';
+  for (var node of bomhead.childNodes[0].childNodes) {
+    if (node.firstChild) {
+      text += (output == 'csv' ? `"${node.firstChild.nodeValue}"` : node.firstChild.nodeValue);
+    }
+    if (node != bomhead.childNodes[0].lastChild) {
+      text += (output == 'csv' ? ',' : '\t');
+    }
+  }
+  text += '\n';
+  for (var row of bombody.childNodes) {
+    let rowCheckbox = row.querySelectorAll('input[type=checkbox]');
+    if (rowCheckbox.length && !rowCheckbox[1].checked) {
+      continue
+    }
+    for (var cell of row.childNodes) {
+      let val = '';
+      for (var node of cell.childNodes) {
+        if (node.nodeName == "INPUT") {
+          if (node.checked) {
+            val += '✓';
+          }
+        } else if ((node.nodeName == "MARK") || (node.nodeName == "A")) {
+          val += node.firstChild.nodeValue;
+        } else {
+          val += node.nodeValue;
+        }
+      }
+      if (output == 'csv') {
+        val = val.replace(/\"/g, '\"\"'); // pair of double-quote characters
+        if (isNumeric(val)) {
+          val = +val;                     // use number
+        } else {
+          val = `"${val}"`;               // enclosed within double-quote
+        }
+      }
+      text += val;
+      if (cell != row.lastChild) {
+        text += (output == 'csv' ? ',' : '\t');
+      }
+    }
+    text += '\n';
+  }
+  console.log('***text***',text)
+
+
+
+  
+
+  if (output != 'clipboard') {
+    // To file: csv or txt
+    var blob = new Blob([text], {
+      type: `text/${output}`
+    });
+    saveFile(`${pcbdata.metadata.title}.${output}`, blob);
+  } else {
+    // To clipboard
+    var textArea = document.createElement("textarea");
+    textArea.classList.add('clipboard-temp');
+    textArea.value = text;
+
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      if (document.execCommand('copy')) {
+        console.log('Bom copied to clipboard.');
+      }
+    } catch (err) {
+      console.log('Can not copy to clipboard.');
+    }
+
+    document.body.removeChild(textArea);
+  }
+}
+
 function isNumeric(str) {
   /* https://stackoverflow.com/a/175787 */
   return (typeof str != "string" ? false : !isNaN(str) && !isNaN(parseFloat(str)));
